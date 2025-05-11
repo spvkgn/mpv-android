@@ -4,6 +4,9 @@ on:
   - push
   - pull_request
 
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   linux:
     runs-on: ubuntu-22.04

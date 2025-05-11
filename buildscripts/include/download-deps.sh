@@ -21,6 +21,9 @@ fi
 if [ ! -d ffmpeg ]; then
 	git clone https://github.com/FFmpeg/FFmpeg ffmpeg
 	[ $IN_CI -eq 1 ] && git -C ffmpeg checkout $v_ci_ffmpeg
+	# https://github.com/mpv-player/mpv/pull/15612
+	$WGET https://patchwork.ffmpeg.org/project/ffmpeg/patch/20250329222809.606230-2-ffmpeg@fratti.ch/raw/ -O - | \
+		patch --verbose -d ffmpeg -p1
 fi
 
 # freetype2
@@ -62,6 +65,7 @@ fi
 
 # mpv
 [ ! -d mpv ] && git clone https://github.com/mpv-player/mpv
+( cd mpv && gh pr diff 15612 -R mpv-player/mpv | git apply - )
 
 cd ..
 
