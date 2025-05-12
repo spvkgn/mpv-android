@@ -29,7 +29,7 @@ jobs:
       - name: Install deps
         run: |
           sudo apt-get update
-          sudo apt-get install autoconf pkg-config libtool ninja-build python3-pip
+          sudo apt-get install autoconf pkg-config libtool ninja-build python3-pip rename
           sudo pip3 install meson
 
       - name: Download deps
@@ -44,7 +44,36 @@ jobs:
         run: |
           buildscripts/include/ci.sh build
 
-      - uses: actions/upload-artifact@v4
+      - name: Sign apk
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        uses: noriban/sign-android-release@v5
+        with:
+          releaseDirectory: app/build/outputs/apk/default/release
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: testkey
+          keyStorePassword: testkey
+          keyPassword: testkey
+
+      - name: Rename apk
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        run: |
+          find . -type f -name '*-signed.apk' -exec mv -v {} . \;
+          prename -v "s/^app-default/mpv-android_$GITHUB_REF_NAME/;s/-release.+(?=\.apk)//" *.apk
+          ls -lh *.apk
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
           name: mpv-android
           path: app/build/outputs/apk/default/release/app-default-arm64-v8a-release-unsigned.apk
+
+      - name: Upload release assets
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          fail_on_unmatched_files: true
+          prerelease: false
+          draft: false
+          body: |
+            mpv-android ${{ github.ref_name }}
+          files: mpv-android*.apk
