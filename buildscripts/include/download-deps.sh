@@ -68,13 +68,3 @@ fi
 ( cd mpv && gh pr diff 15612 -R mpv-player/mpv | git apply - )
 
 cd ..
-
-# youtube-dl
-$WGET https://kitsunemimi.pw/ytdl/dist.zip
-unzip dist.zip -d ../app/src/main/assets/ytdl
-rm -f ../app/src/main/assets/ytdl/youtube-dl # don't need it
-rm dist.zip
-# python for arm64
-$WGET https://github.com/spvkgn/ndk-pkg-package-manually-build/releases/download/python3.9-release/python3-3.9.22-android-21-arm64-v8a.release.tar.xz -O - | \
-	tar -C ../app/src/main/assets/ytdl --strip-components=2 --transform='s/python3\.[0-9]/python3/' --wildcards -xJvf - */bin/python3.9
-chmod -x ../app/src/main/assets/ytdl/python3
