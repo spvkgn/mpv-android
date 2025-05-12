@@ -60,7 +60,7 @@ jobs:
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         run: |
           find . -type f -name '*-signed.apk' -exec mv -v {} . \;
-          prename -v "s/^app-default/mpv-android_$GITHUB_REF_NAME/;s/-release.+(?=\.apk)//" *.apk
+          prename -v "s/^app-default/mpv-android+ytdl-$GITHUB_REF_NAME/;s/-release.+(?=\.apk)//" *.apk
           ls -lh *.apk
 
       - name: Upload artifact
