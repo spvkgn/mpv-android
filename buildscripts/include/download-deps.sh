@@ -27,6 +27,13 @@ if [ ! -d fdkaac ]; then
 	echo "void android_errorWriteLog(int i, const char *string){}" > fdkaac/libSBRdec/include/log/log.h
 fi
 
+# opus
+if [ ! -d opus ]; then
+	mkdir opus
+	$WGET https://github.com/xiph/opus/releases/download/v$v_opus/opus-$v_opus.tar.gz -O - | \
+		tar -xz -C opus --strip-components=1
+fi
+
 # ffmpeg
 if [ ! -d ffmpeg ]; then
 	git clone https://github.com/FFmpeg/FFmpeg ffmpeg
