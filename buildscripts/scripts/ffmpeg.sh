@@ -28,8 +28,8 @@ args=(
 	--arch=${ndk_triple%%-*} --cpu=$cpu
 	--extra-cflags="-I$prefix_dir/include $cpuflags" --extra-ldflags="-L$prefix_dir/lib"
 
-	--enable-{jni,mediacodec,mbedtls,libdav1d} --disable-vulkan
-	--disable-static --enable-shared --enable-{gpl,version3}
+	--enable-{jni,mediacodec,mbedtls,libdav1d,libfdk-aac} --disable-vulkan
+	--disable-static --enable-shared --enable-{gpl,version3,nonfree}
 
 	# disable unneeded parts
 	--disable-{stripping,doc,programs}

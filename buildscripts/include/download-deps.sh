@@ -17,6 +17,16 @@ fi
 # dav1d
 [ ! -d dav1d ] && git clone https://github.com/videolan/dav1d
 
+# fdk-aac
+if [ ! -d fdkaac ]; then
+	mkdir fdkaac
+	$WGET https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-$v_fdkaac.tar.gz -O - | \
+		tar -xz -C fdkaac --strip-components=1
+	# https://github.com/mstorsjo/fdk-aac/issues/124
+	mkdir -p fdkaac/libSBRdec/include/log
+	echo "void android_errorWriteLog(int i, const char *string){}" > fdkaac/libSBRdec/include/log/log.h
+fi
+
 # ffmpeg
 if [ ! -d ffmpeg ]; then
 	git clone https://github.com/FFmpeg/FFmpeg ffmpeg
