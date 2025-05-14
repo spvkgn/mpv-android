@@ -3,8 +3,7 @@ run-name: ${{ startsWith(github.ref, 'refs/tags/') && format('Release {0}', gith
 
 on:
   push:
-    tags:
-      - '[0-9]+*'
+  pull_request:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -46,7 +45,7 @@ jobs:
         run: |
           buildscripts/include/ci.sh build
 
-      - name: Sign apk
+      - name: Sign release apk
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         uses: noriban/sign-android-release@v5
         with:
@@ -56,18 +55,24 @@ jobs:
           keyStorePassword: testkey
           keyPassword: testkey
 
-      - name: Rename apk
+      - name: Rename release apk
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         run: |
           find . -type f -name '*-signed.apk' -exec mv -v {} . \;
           prename -v "s/^app-default/mpv-android+ytdl-$GITHUB_REF_NAME/;s/-release.+(?=\.apk)//" *.apk
           ls -lh *.apk
 
-      - name: Upload artifact
+      - name: Upload artifact (release)
         uses: actions/upload-artifact@v4
         with:
-          name: mpv-android
-          path: app/build/outputs/apk/default/release/app-default-arm64-v8a-release-unsigned.apk
+          name: mpv-android-release
+          path: app/build/outputs/apk/default/release/*.apk
+
+      - name: Upload artifact (debug)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mpv-android-debug
+          path: app/build/outputs/apk/default/debug/*.apk
 
       - name: Upload release assets
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
@@ -77,5 +82,6 @@ jobs:
           prerelease: false
           draft: false
           body: |
-            mpv-android ${{ github.ref_name }}
+            # mpv-android with yt-dlp support
+            ## What's new
           files: mpv-android*.apk
