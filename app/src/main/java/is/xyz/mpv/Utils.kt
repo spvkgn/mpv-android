@@ -34,7 +34,7 @@ internal object Utils {
         val assetManager = context.assets
         val files = arrayOf(
             "subfont.ttf", "cacert.pem",
-            "ytdl/python3", "ytdl/python39.zip", "ytdl/setup.py", "ytdl/wrapper"
+            "ytdl/python3", "ytdl/python310.zip", "ytdl/setup.py", "ytdl/wrapper"
         )
         val configDir = context.filesDir.path
         File("$configDir/ytdl").mkdir()
