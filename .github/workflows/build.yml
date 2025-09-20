@@ -2,7 +2,7 @@ name: build
 run-name: ${{ startsWith(github.ref, 'refs/tags/') && format('Release {0}', github.ref_name) || null }}
 
 on:
-  push:
+  # push:
   pull_request:
 
 env:

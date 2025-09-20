@@ -3,7 +3,7 @@ cd "$(dirname "$0")" || exit 1
 
 PYTHON_ZIP=$(ls python*.zip 2>/dev/null | head -n1)
 if [ -n "$PYTHON_ZIP" ]; then
-  VERSION=$(echo "$PYTHON_ZIP" | sed 's/python//;s/\.zip//')
+  VERSION=$(echo "$PYTHON_ZIP" | awk -F'python|\\.zip' '{print $2}')
   PYTHON_MAJOR_MINOR="${VERSION:0:1}.${VERSION:1:2}"
 fi
 
