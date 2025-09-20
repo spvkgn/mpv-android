@@ -1,5 +1,15 @@
 #!/system/bin/sh
-cd $(dirname "$0")
+cd "$(dirname "$0")" || exit 1
+
+PYTHON_ZIP=$(ls python*.zip 2>/dev/null | head -n1)
+if [ -n "$PYTHON_ZIP" ]; then
+  VERSION=$(echo "$PYTHON_ZIP" | sed 's/python//;s/\.zip//')
+  PYTHON_MAJOR_MINOR="${VERSION:0:1}.${VERSION:1:2}"
+fi
+
 export PYTHONHOME=.
-export SSL_CERT_FILE=$PWD/../cacert.pem
+export PYTHONPATH=".:./python$VERSION.zip:./lib/python$PYTHON_MAJOR_MINOR:./lib/python$PYTHON_MAJOR_MINOR/lib-dynload"
+export SSL_CERT_FILE="$PWD/../cacert.pem"
+export PYTHONUNBUFFERED=1
+
 exec ./python3 "$@"
