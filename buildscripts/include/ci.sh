@@ -81,17 +81,14 @@ fi
 
 msg "Fetching python"
 mkdir -p $HOME/dist
-$WGET https://github.com/spvkgn/ndk-pkg-package-manually-build/releases/download/python3.10-release/python3-3.10.18-android-21-arm64-v8a.release.tar.xz -O - | tee \
-	>(tar -C ../app/src/main/assets/ytdl --strip-components=2 --transform='s/python3.10/python3/' --wildcards "*/bin/python3.10" -xJ) \
-	>(tar -C $HOME/dist --strip-components=3 --wildcards "*/lib/python3.10/" -xJ) >/dev/null
-# $WGET https://github.com/spvkgn/ndk-pkg-package-manually-build/releases/download/python3.9-release/python3-3.9.22-android-21-arm64-v8a.release.tar.xz -O - | tee \
-# 	>(tar -C ../app/src/main/assets/ytdl --strip-components=2 --transform='s/python3.9/python3/' --wildcards "*/bin/python3.9" -xJ) \
-# 	>(tar -C $HOME/dist --strip-components=3 --wildcards "*/lib/python3.9/" -xJ) >/dev/null
+gh api repos/spvkgn/ndk-pkg-package-manually-build/releases/tags/python${PY_VERSION}-release --jq '.assets[] | select(.name | contains("python3")) | .browser_download_url' | \
+xargs -I{} wget --header="Authorization: token $GH_TOKEN" {} -O - | tee \
+  >(tar -C ../app/src/main/assets/ytdl --strip-components=2 --transform="s/python$PY_VERSION/python3/" --wildcards "*/bin/python$PY_VERSION" -xJ) \
+  >(tar -C $HOME/dist --strip-components=3 --wildcards "*/lib/python$PY_VERSION/" -xJ) >/dev/null
 
 recompile_py () {
 	find . -name '*.pyc' -delete
-	python3.10 -OO -m compileall -b -j$(nproc) .
-	# python3.9 -OO -m compileall -b -j$(nproc) .
+	python$PY_VERSION -OO -m compileall -b -j$(nproc) .
 	# leave only the legacy locations (*.pyc next to *.py)
 	find . -name "__pycache__" -print0 | xargs -0 -- rm -rf
 }
@@ -118,8 +115,7 @@ FILE
 	cd $HOME/dist
 	prune_stdlib
 	recompile_py
-	zip -9 $GITHUB_WORKSPACE/app/src/main/assets/ytdl/python310.zip -R '*.pyc'
-	# zip -9 $GITHUB_WORKSPACE/app/src/main/assets/ytdl/python39.zip -R '*.pyc'
+	zip -9 $GITHUB_WORKSPACE/app/src/main/assets/ytdl/python${PY_VERSION//./}.zip -R '*.pyc'
 )
 
 msg "Building mpv"
