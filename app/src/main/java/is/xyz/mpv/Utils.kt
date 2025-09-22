@@ -32,27 +32,31 @@ import kotlin.math.roundToInt
 internal object Utils {
     fun copyAssets(context: Context) {
         val assetManager = context.assets
+        val pythonVersion = "3.10"
         val files = arrayOf(
             "subfont.ttf", "cacert.pem",
-            "ytdl/python3", "ytdl/python310.zip", "ytdl/setup.py", "ytdl/wrapper"
+            "ytdl/python3", "ytdl/python${pythonVersion.replace(".", "")}.zip", "ytdl/setup.py", "ytdl/wrapper"
         )
         val configDir = context.filesDir.path
         File("$configDir/ytdl").mkdir()
+
+        val versionFile = File("$configDir/python_version.txt")
+        if (versionFile.exists() && versionFile.readText() == pythonVersion) {
+            Log.v(TAG, "Assets are up to date: Python $pythonVersion")
+            return
+        }
+
+        Log.w(TAG, "Copying assets: Python $pythonVersion")
+
         for (filename in files) {
             var ins: InputStream? = null
             var out: OutputStream? = null
             try {
                 ins = assetManager.open(filename, AssetManager.ACCESS_STREAMING)
                 val outFile = File("$configDir/$filename")
-                // Note that .available() officially returns an *estimated* number of bytes available
-                // this is only true for generic streams, asset streams return the full file size
-                if (outFile.length() == ins.available().toLong()) {
-                    Log.v(TAG, "Skipping copy of asset file (exists same size): $filename")
-                    continue
-                }
                 out = FileOutputStream(outFile)
                 ins.copyTo(out)
-                Log.w(TAG, "Copied asset file: $filename")
+                Log.i(TAG, "Copied asset file: $filename")
             } catch (e: IOException) {
                 Log.e(TAG, "Failed to copy asset file: $filename", e)
             } finally {
@@ -61,11 +65,24 @@ internal object Utils {
             }
         }
 
+        try {
+            versionFile.writeText(pythonVersion)
+            Log.i(TAG, "Saved assets version: Python $pythonVersion")
+        } catch (e: IOException) {
+            Log.e(TAG, "Failed to save version", e)
+        }
+
         val execFiles = arrayOf("ytdl/python3", "ytdl/wrapper")
         for (filename in execFiles) {
             try {
-                File("$configDir/$filename").setExecutable(true)
-            } catch (e: IOException) {}
+                val file = File("$configDir/$filename")
+                if (file.exists()) {
+                    file.setExecutable(true)
+                    Log.d(TAG, "Set executable for: $filename")
+                }
+            } catch (e: IOException) {
+                Log.e(TAG, "Failed to set executable: $filename", e)
+            }
         }
     }
 
