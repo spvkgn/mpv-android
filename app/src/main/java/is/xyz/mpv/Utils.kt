@@ -40,63 +40,56 @@ internal object Utils {
         val configDir = context.filesDir.path
         File("$configDir/ytdl").mkdir()
 
-        var needsUpdate = false
-        for (filename in files) {
+        val filesToUpdate = files.filter { filename ->
             try {
                 assetManager.open(filename).use { ins ->
                     val outFile = File("$configDir/$filename")
-                    if (!outFile.exists() || outFile.length() != ins.available().toLong()) {
-                        needsUpdate = true
-                        Log.w(TAG, "Needs to update file: $filename")
-                    }
+                    !outFile.exists() || outFile.length() != ins.available().toLong()
                 }
             } catch (e: IOException) {
-                needsUpdate = true
-                Log.w(TAG, "Error checking file: $filename", e)
+                true
             }
         }
 
         val versionFile = File("$configDir/python_version.txt")
-        if (!versionFile.exists() || versionFile.readText() != pythonVersion) {
-            needsUpdate = true
-            Log.w(TAG, "Python version mismatch")
-        }
-
-        if (!needsUpdate) {
-            Log.v(TAG, "All assets are up to date.")
+        val versionMatches = versionFile.exists() && versionFile.readText() == pythonVersion
+        if (filesToUpdate.isEmpty() && versionMatches) {
+            Log.v(TAG, "All assets are up to date: Python $pythonVersion")
             return
         }
 
-        Log.w(TAG, "Copying assets: Python $pythonVersion")
+        Log.w(TAG, "Updating ${filesToUpdate.size} files: Python $pythonVersion")
 
-        for (filename in files) {
+        filesToUpdate.forEach { filename ->
             try {
                 assetManager.open(filename).use { ins ->
-                    val outFile = File("$configDir/$filename")
-                    FileOutputStream(outFile).use { out ->
+                    FileOutputStream(File("$configDir/$filename")).use { out ->
                         ins.copyTo(out)
-                        Log.i(TAG, "Copied asset file: $filename")
+                        Log.i(TAG, "Copied: $filename")
                     }
                 }
             } catch (e: IOException) {
-                Log.e(TAG, "Failed to copy asset file: $filename", e)
+                Log.e(TAG, "Failed to copy: $filename", e)
             }
         }
 
-        try {
-            versionFile.writeText(pythonVersion)
-            Log.i(TAG, "Saved Python version: $pythonVersion")
-        } catch (e: IOException) {
-            Log.e(TAG, "Failed to save version file", e)
-        }
-
-        arrayOf("ytdl/python3", "ytdl/wrapper").forEach { filename ->
+        if (!versionMatches || filesToUpdate.isNotEmpty()) {
             try {
-                File("$configDir/$filename").setExecutable(true)
+                versionFile.writeText(pythonVersion)
+                Log.i(TAG, "Version updated: $pythonVersion")
             } catch (e: IOException) {
-                Log.e(TAG, "Failed to set executable: $filename", e)
+                Log.e(TAG, "Failed to save version", e)
             }
         }
+
+        filesToUpdate.filter { it == "ytdl/python3" || it == "ytdl/wrapper" }
+            .forEach { filename ->
+                try {
+                    File("$configDir/$filename").setExecutable(true)
+                } catch (e: IOException) {
+                    Log.e(TAG, "Failed to set executable: $filename", e)
+                }
+            }
     }
 
     fun findRealPath(fd: Int): String? {
