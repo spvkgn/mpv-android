@@ -81,7 +81,8 @@ fi
 
 msg "Fetching python"
 mkdir -p $HOME/dist
-gh api repos/spvkgn/ndk-pkg-package-manually-build/releases/tags/python${PY_VERSION}-release --jq '.assets[] | select(.name | contains("python3")) | .browser_download_url' | \
+
+gh api repos/spvkgn/ndk-pkg-package-manually-build/releases/tags/python${PY_VERSION}-release --jq '.assets[] | select(.name | startswith("python3") and endswith("'"$ABI"'.release.tar.xz")) | .browser_download_url' | \
 xargs -I{} wget --header="Authorization: token $GH_TOKEN" {} -O - | tee \
   >(tar -C ../app/src/main/assets/ytdl --strip-components=2 --transform="s/python$PY_VERSION/python3/" --wildcards "*/bin/python$PY_VERSION" -xJ) \
   >(tar -C $HOME/dist --strip-components=3 --wildcards "*/lib/python$PY_VERSION/" -xJ) >/dev/null
