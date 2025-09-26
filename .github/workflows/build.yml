@@ -2,7 +2,7 @@ name: build
 run-name: ${{ startsWith(github.ref, 'refs/tags/') && format('Release {0}', github.ref_name) || null }}
 
 on:
-  push:
+  # push:
   pull_request:
 
 env:
@@ -10,7 +10,19 @@ env:
 
 jobs:
   linux:
+    name: build ${{ matrix.arch }}
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        include:
+          - abi: armeabi-v7a
+            arch: armv7l
+          - abi: arm64-v8a
+            arch: arm64
+          - abi: x86
+            arch: x86
+          - abi: x86_64
+            arch: x86_64
     steps:
       - uses: actions/checkout@v4
 
@@ -25,32 +37,36 @@ jobs:
           distribution: temurin
 
       - name: Export env vars
-        run: buildscripts/include/ci.sh export >>$GITHUB_ENV
+        run: |
+          export ARCH=${{ matrix.arch }}
+          echo $(buildscripts/include/ci.sh export) >> $GITHUB_ENV
 
       - uses: actions/cache@v4
         with:
           path: gh-cache/
-          key: "${{ env.CACHE_IDENTIFIER }}"
+          key: ${{ env.CACHE_IDENTIFIER }}
           enableCrossOsArchive: true
 
       - name: Install deps
         run: |
-          sudo apt-get update
-          sudo apt-get install autoconf pkg-config libtool ninja-build python3-pip rename
+          sudo apt install -y ninja-build rename nasm
           sudo pip3 install meson
 
       - name: Download deps
-        run: |
-          mkdir -p "$CACHE_FOLDER"
-          buildscripts/include/ci.sh install
         env:
-          CACHE_MODE: "folder"
-          CACHE_FOLDER: "${{ github.workspace }}/gh-cache"
+          CACHE_MODE: folder
+          CACHE_FOLDER: ${{ github.workspace }}/gh-cache
+          ARCH: ${{ matrix.arch }}
+        run: |
+          mkdir -p $CACHE_FOLDER
+          buildscripts/include/ci.sh install
 
       - name: Build
         run: |
           PY_VERSION_FULL=${{ steps.py.outputs.python-version }}
           export PY_VERSION=${PY_VERSION_FULL%.*}
+          export ABI=${{ matrix.abi }}
+          export ARCH=${{ matrix.arch }}
           buildscripts/include/ci.sh build
 
       - name: Sign release apk
@@ -73,13 +89,13 @@ jobs:
       - name: Upload artifact (release)
         uses: actions/upload-artifact@v4
         with:
-          name: mpv-android-release
+          name: mpv-android-release-${{ matrix.arch }}
           path: app/build/outputs/apk/default/release/*.apk
 
       - name: Upload artifact (debug)
         uses: actions/upload-artifact@v4
         with:
-          name: mpv-android-debug
+          name: mpv-android-debug-${{ matrix.arch }}
           path: app/build/outputs/apk/default/debug/*.apk
 
       - name: Upload release assets
