@@ -34,41 +34,64 @@ import kotlin.math.roundToInt
 internal object Utils {
     fun copyAssets(context: Context) {
         val assetManager = context.assets
+        val pythonVersion = "3.10"
         val files = arrayOf(
             "subfont.ttf", "cacert.pem",
-            "ytdl/python3", "ytdl/python39.zip", "ytdl/setup.py", "ytdl/wrapper"
+            "ytdl/python3", "ytdl/python${pythonVersion.replace(".", "")}.zip", "ytdl/setup.py", "ytdl/wrapper"
         )
         val configDir = context.filesDir.path
         File("$configDir/ytdl").mkdir()
-        for (filename in files) {
-            var ins: InputStream? = null
-            var out: OutputStream? = null
+
+        val filesToUpdate = files.filter { filename ->
             try {
-                ins = assetManager.open(filename, AssetManager.ACCESS_STREAMING)
-                val outFile = File("$configDir/$filename")
-                // Note that .available() officially returns an *estimated* number of bytes available
-                // this is only true for generic streams, asset streams return the full file size
-                if (outFile.length() == ins.available().toLong()) {
-                    Log.v(TAG, "Skipping copy of asset file (exists same size): $filename")
-                    continue
+                assetManager.open(filename).use { ins ->
+                    val outFile = File("$configDir/$filename")
+                    !outFile.exists() || outFile.length() != ins.available().toLong()
                 }
-                out = FileOutputStream(outFile)
-                ins.copyTo(out)
-                Log.w(TAG, "Copied asset file: $filename")
             } catch (e: IOException) {
-                Log.e(TAG, "Failed to copy asset file: $filename", e)
-            } finally {
-                ins?.close()
-                out?.close()
+                true
             }
         }
 
-        val execFiles = arrayOf("ytdl/python3", "ytdl/wrapper")
-        for (filename in execFiles) {
-            try {
-                File("$configDir/$filename").setExecutable(true)
-            } catch (e: IOException) {}
+        val versionFile = File("$configDir/python_version.txt")
+        val versionMatches = versionFile.exists() && versionFile.readText() == pythonVersion
+        if (filesToUpdate.isEmpty() && versionMatches) {
+            Log.v(TAG, "All assets are up to date: Python $pythonVersion")
+            return
         }
+
+        Log.w(TAG, "Updating ${filesToUpdate.size} files: Python $pythonVersion")
+
+        filesToUpdate.forEach { filename ->
+            try {
+                assetManager.open(filename).use { ins ->
+                    FileOutputStream(File("$configDir/$filename")).use { out ->
+                        ins.copyTo(out)
+                        Log.i(TAG, "Copied: $filename")
+                    }
+                }
+            } catch (e: IOException) {
+                Log.e(TAG, "Failed to copy: $filename", e)
+            }
+        }
+
+        if (!versionMatches || filesToUpdate.isNotEmpty()) {
+            try {
+                versionFile.writeText(pythonVersion)
+                Log.i(TAG, "Version updated: $pythonVersion")
+            } catch (e: IOException) {
+                Log.e(TAG, "Failed to save version", e)
+            }
+        }
+
+        filesToUpdate.filter { it == "ytdl/python3" || it == "ytdl/wrapper" }
+            .forEach { filename ->
+                try {
+                    File("$configDir/$filename").setExecutable(true)
+                } catch (e: IOException) {
+                    Log.e(TAG, "Failed to set executable: $filename", e)
+                }
+            }
     }
 
     fun findRealPath(fd: Int): String? {
