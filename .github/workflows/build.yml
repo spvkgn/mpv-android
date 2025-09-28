@@ -2,7 +2,7 @@ name: build
 run-name: ${{ startsWith(github.ref, 'refs/tags/') && format('Release {0}', github.ref_name) || null }}
 
 on:
-  # push:
+  push:
   pull_request:
 
 env:
@@ -15,21 +15,21 @@ jobs:
     strategy:
       matrix:
         include:
-          - abi: armeabi-v7a
-            arch: armv7l
+          # - abi: armeabi-v7a
+          #   arch: armv7l
           - abi: arm64-v8a
             arch: arm64
-          - abi: x86
-            arch: x86
-          - abi: x86_64
-            arch: x86_64
+          # - abi: x86
+          #   arch: x86
+          # - abi: x86_64
+          #   arch: x86_64
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        id: py
-        with:
-          python-version: '3.10'
+      # - uses: actions/setup-python@v5
+      #   id: py
+      #   with:
+      #     python-version: '3.10'
 
       - uses: actions/setup-java@v4
         with:
@@ -63,8 +63,9 @@ jobs:
 
       - name: Build
         run: |
-          PY_VERSION_FULL=${{ steps.py.outputs.python-version }}
-          export PY_VERSION=${PY_VERSION_FULL%.*}
+          # PY_VERSION_FULL=${{ steps.py.outputs.python-version }}
+          # export PY_VERSION=${PY_VERSION_FULL%.*}
+          export PY_VERSION=$(py3versions -vd)
           export ABI=${{ matrix.abi }}
           export ARCH=${{ matrix.arch }}
           buildscripts/include/ci.sh build
