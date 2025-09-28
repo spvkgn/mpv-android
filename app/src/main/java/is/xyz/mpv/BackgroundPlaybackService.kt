@@ -18,6 +18,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.PendingIntentCompat
 import androidx.core.app.ServiceCompat
 import androidx.media.app.NotificationCompat.MediaStyle
+import `is`.xyz.mpv.MPVLib.MpvEvent
 
 /*
     All this service does is
@@ -47,7 +48,9 @@ class BackgroundPlaybackService : Service(), MPVLib.EventObserver {
 
     private fun buildNotification(): Notification {
         val notificationIntent = Intent(this, MPVActivity::class.java)
-        val pendingIntent = PendingIntentCompat.getActivity(this, 0, notificationIntent, 0, false)
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+        val pendingIntent = PendingIntentCompat.getActivity(this, 0,
+            notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT, false)
 
         val builder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
 
@@ -108,7 +111,7 @@ class BackgroundPlaybackService : Service(), MPVLib.EventObserver {
         // read some metadata
 
         cachedMetadata.readAll()
-        paused = MPVLib.getPropertyBoolean("pause")
+        paused = MPVLib.getPropertyBoolean("pause") == true
         shouldShowPrevNext = (MPVLib.getPropertyInt("playlist-count") ?: 0) > 1
 
         // create notification and turn this into a "foreground service"
@@ -161,7 +164,7 @@ class BackgroundPlaybackService : Service(), MPVLib.EventObserver {
     }
 
     override fun event(eventId: Int) {
-        if (eventId == MPVLib.mpvEventId.MPV_EVENT_SHUTDOWN)
+        if (eventId == MpvEvent.MPV_EVENT_SHUTDOWN)
             stopSelf()
     }
 

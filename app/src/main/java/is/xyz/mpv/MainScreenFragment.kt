@@ -1,7 +1,7 @@
 package `is`.xyz.mpv
 
 import `is`.xyz.filepicker.DocumentPickerFragment
-import `is`.xyz.mpv.config.SettingsActivity
+import `is`.xyz.mpv.preferences.PreferenceActivity
 import `is`.xyz.mpv.databinding.FragmentMainScreenBinding
 import android.app.Activity
 import android.content.ActivityNotFoundException
@@ -62,12 +62,14 @@ class MainScreenFragment : Fragment(R.layout.fragment_main_screen) {
         playerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             // we don't care about the result but remember that we've been here
             returningFromPlayer = true
-            Log.v(TAG, "returned from player")
+            Log.v(TAG, "returned from player ($it)")
         }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         binding = FragmentMainScreenBinding.bind(view)
+
+        Utils.handleInsetsAsPadding(binding.root)
 
         binding.docBtn.setOnClickListener {
             try {
@@ -99,7 +101,7 @@ class MainScreenFragment : Fragment(R.layout.fragment_main_screen) {
         }
         binding.settingsBtn.setOnClickListener {
             saveChoice("") // will reset
-            startActivity(Intent(context, SettingsActivity::class.java))
+            startActivity(Intent(context, PreferenceActivity::class.java))
         }
 
         if (BuildConfig.DEBUG) {
